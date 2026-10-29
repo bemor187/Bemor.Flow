@@ -13,6 +13,8 @@
   <a href="#support-the-project">Support</a>
 </p>
 
+<p align="center"><a href="https://github.com/bemor187/Bemor.Flow/raw/main/dist/Bemor.Flow-v0.3.0.zip"><b>⬇ Download Bemor.Flow v0.3.0</b></a></p>
+
 <p align="center"><img src="docs/panel.png" width="320" alt="The Bemor.Flow side panel next to Google Flow"></p>
 
 ---
@@ -34,13 +36,13 @@ Making the same edit to 50 images in Flow by hand means 50 uploads, 50 prompts, 
 ## Install
 Bemor.Flow isn't on the Chrome Web Store yet, so you load it yourself. It takes about two minutes.
 
-1. **Download.** On this page click the green **Code** button, then **Download ZIP**. Unzip it somewhere you'll keep it, e.g. `Documents\Bemor.Flow`.
+1. **Download.** Grab **[Bemor.Flow-v0.3.0.zip](https://github.com/bemor187/Bemor.Flow/raw/main/dist/Bemor.Flow-v0.3.0.zip)** and unzip it somewhere you'll keep it, e.g. `Documents\Bemor.Flow`.
 2. **Open extensions.** In Chrome, go to `chrome://extensions`.
 3. **Developer mode.** Switch on **Developer mode** (top right).
-4. **Load it.** Click **Load unpacked** and select the **`extension`** folder inside what you unzipped (the folder that contains `manifest.json`).
+4. **Load it.** Click **Load unpacked** and select the unzipped **`Bemor.Flow`** folder (the one that contains `manifest.json`). If you cloned the repo instead, pick its `extension` folder.
 5. **Pin it.** Click the puzzle-piece icon in Chrome's toolbar and pin **Bemor.Flow**.
 
-**Updating:** download the new ZIP, replace the old folder, then press ↻ on the Bemor.Flow card in `chrome://extensions`.
+**Updating:** download the newest ZIP from the [`dist`](dist) folder, replace the old folder, then press ↻ on the Bemor.Flow card in `chrome://extensions`.
 
 ## Quick start
 1. **Open Flow.** Go to Google Flow, open or create a project (the address looks like `flow.google.com/project/...`), and make sure you're signed in.
