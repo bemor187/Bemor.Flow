@@ -32,6 +32,36 @@
       return first === name || first === stem || (first.length >= 12 && stem.startsWith(first));
     });
   };
+  const CLICKABLE = 'button, [role="button"], [role="option"], [role="gridcell"], [role="listitem"], [tabindex]';
+  const visible = (el) => { const r = el.getBoundingClientRect(); return r.width > 16 && r.height > 16; };
+  // Find the just-uploaded file in Flow's picker: 1) by its file name anywhere in a clickable element,
+  // 2) otherwise by a thumbnail that was not on the page before the upload.
+  function findUpload(name, seenSrc) {
+    const row = rowFor(name);
+    if (row) return { el: row, how: 'name' };
+    const stem = name.replace(/\.[^.]+$/, '');
+    const byText = [...document.querySelectorAll(CLICKABLE)].find((el) =>
+      visible(el) && ((el.innerText || '').includes(stem) || (el.getAttribute('aria-label') || '').includes(stem)));
+    if (byText) return { el: byText, how: 'label' };
+    const tileSet = new Set(tiles());
+    const img = [...document.querySelectorAll('img')].find((i) => {
+      const src = i.currentSrc || i.src;
+      return src && !seenSrc.has(src) && !tileSet.has(i) && i.complete && i.naturalWidth > 0 && visible(i);
+    });
+    if (img) return { el: img.closest(CLICKABLE) || img, how: 'new thumbnail' };
+    return null;
+  }
+  // What the picker looks like, for the log when the upload can't be found or attached.
+  function pickerReport(seenSrc) {
+    const items = [...document.querySelectorAll(CLICKABLE)].filter((el) => visible(el) && el.querySelector('img'));
+    const desc = items.slice(0, 6).map((el) => {
+      const t = (el.getAttribute('aria-label') || (el.innerText || '').replace(/\s+/g, ' ')).trim().slice(0, 40);
+      return `<${el.tagName.toLowerCase()}${el.getAttribute('role') ? ' role=' + el.getAttribute('role') : ''}> "${t}"`;
+    });
+    const newImgs = [...document.querySelectorAll('img')].filter((i) => !seenSrc.has(i.currentSrc || i.src)).length;
+    return `Picker items with pictures: ${items.length} [${desc.join(', ')}]; new pictures since upload: ${newImgs}; ` +
+      `Add-to-prompt button: ${exactText('Add to prompt') ? 'yes' : 'no'}; window width: ${innerWidth}px`;
+  }
   const uploadBtn = () => btn('Upload media') || byText('Upload media');
   // narrow windows show a full-screen picker, wide ones a popover; both have the same pieces
   function closePicker() {
@@ -109,17 +139,28 @@
     };
     const up = await openPicker();
     step('picker opened');
+    // Remember every picture already on the page, so the new upload can be spotted even if Flow
+    // does not show its file name.
+    const seenSrc = new Set([...document.querySelectorAll('img')].map((i) => i.currentSrc || i.src));
     const uploaded = onceMessage('gw-uploaded', 10000);
     up.click();
     await uploaded;
     step('uploaded; waiting for it in the picker');
-    await waitFor('uploaded asset ' + job.name, () => rowFor(job.name), 60000);
+    const found = () => findUpload(job.name, seenSrc);
+    try {
+      await waitFor('uploaded asset ' + job.name, found, 60000);
+    } catch (e) {
+      throw new Error('Upload never showed up in the picker. ' + pickerReport(seenSrc));
+    }
+    step('found upload in picker (' + found().how + ')');
     // Attach it. Narrow layout: one click on the row. Wide layout: click the row, then "Add to prompt".
     // A freshly uploaded row can ignore clicks, so if nothing attaches, close and reopen the picker and retry.
     for (let tries = 0; tries < 4 && !btn('Ingredient'); tries++) {
       await sleep(1500);
-      let r = rowFor(job.name);
-      if (!r) { await openPicker(); r = await waitFor('uploaded asset ' + job.name, () => rowFor(job.name), 15000); }
+      let f = found();
+      if (!f) { await openPicker(); f = await waitFor('uploaded asset ' + job.name, found, 15000).catch(() => null); }
+      if (!f) continue;
+      const r = f.el;
       await sleep(600);
       r.scrollIntoView({ block: 'center' });
       await sleep(300);
@@ -132,7 +173,11 @@
       await sleep(2000);
       if (!btn('Ingredient')) { closePicker(); await sleep(1200); }
     }
-    await waitFor('ingredient chip', () => btn('Ingredient'), 10000);
+    try {
+      await waitFor('ingredient chip', () => btn('Ingredient'), 10000);
+    } catch (e) {
+      throw new Error('Clicked the upload but it never attached. ' + pickerReport(seenSrc));
+    }
     step('attached as ingredient');
     if (uploadBtn()) { closePicker(); await sleep(800); }
     await setPrompt(job.prompt);

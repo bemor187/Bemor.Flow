@@ -87,6 +87,7 @@
     padding:8px 10px;font:11.5px/1.55 var(--mono);color:#9fd8b0;white-space:pre-wrap;
     background-image:repeating-linear-gradient(0deg, transparent 0 2px, rgba(94,226,138,.035) 2px 3px)}
   #log:empty::before{content:"Scanner quiet. Nothing running yet.";color:#5d7a66}
+  .logtools{justify-content:flex-end;margin-top:8px}
   .ok{color:var(--ok)} .err{color:var(--err)}
   @media (prefers-reduced-motion:reduce){ .scanner h2 .dot{animation:none} }
 </style></head><body>
@@ -172,6 +173,7 @@
 <section class="card scanner">
   <h2><span class="dot"></span>SCANNER</h2>
   <div id="log"></div>
+  <div class="row logtools"><button id="dlLog">⬇ Download log</button><button id="copyLog">Copy log</button><button id="clearLog">Clear</button></div>
 </section>
 
 <script src="runner.js"></script>

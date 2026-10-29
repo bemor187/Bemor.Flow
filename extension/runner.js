@@ -187,3 +187,32 @@ $('start').onclick = async () => {
   $('status').textContent = '';
   running = false; refresh();
 };
+
+// ---- log tools: download / copy / clear, for bug reports ----
+function logText() {
+  const m = chrome.runtime.getManifest();
+  const head = [
+    `${m.name} ${m.version} log`,
+    `Saved: ${new Date().toString()}`,
+    `Browser: ${navigator.userAgent}`,
+    `Settings: images=${$('limit').value} cooldown=${$('pause').value}s giveUp=${$('tmo').value}s retries=${$('retries').value} skip=${$('skip').checked}`,
+    `Naming: image1="${$('name1').value}" image2="${$('name2').value}" only="${$('only').value}"`,
+    `Prompt: ${$('prompt').value}`,
+    '-'.repeat(60),
+  ];
+  return head.concat([...$('log').children].map((d) => d.textContent)).join('\n') + '\n';
+}
+$('dlLog').onclick = () => {
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([logText()], { type: 'text/plain' }));
+  a.download = `bemor-flow-log-${stamp}.txt`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+};
+$('copyLog').onclick = async () => {
+  try { await navigator.clipboard.writeText(logText()); $('copyLog').textContent = 'Copied!'; }
+  catch (e) { $('copyLog').textContent = 'Copy failed'; }
+  setTimeout(() => { $('copyLog').textContent = 'Copy log'; }, 1500);
+};
+$('clearLog').onclick = () => { if (!running) $('log').textContent = ''; };
