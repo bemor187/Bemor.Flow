@@ -1,0 +1,57 @@
+{
+  "manifest_version": 3,
+  "name": "Bemor.Flow",
+  "version": "0.3.0",
+  "description": "Applies one prompt to a folder of images in Google Flow and saves each result under a naming pattern you choose.",
+  "action": {
+    "default_title": "Open Bemor.Flow",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "tabs",
+    "debugger",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "https://flow.google.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://flow.google.com/project/*"
+      ],
+      "js": [
+        "inject.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://flow.google.com/project/*"
+      ],
+      "js": [
+        "flow.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "side_panel": {
+    "default_path": "runner.html"
+  },
+  "minimum_chrome_version": "116",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
