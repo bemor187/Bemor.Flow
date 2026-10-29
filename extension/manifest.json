@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Bemor.Flow",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Applies one prompt to a folder of images in Google Flow and saves each result under a naming pattern you choose.",
   "action": {
     "default_title": "Open Bemor.Flow",

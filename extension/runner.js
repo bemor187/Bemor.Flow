@@ -115,6 +115,7 @@ async function waitReady(tabId, timeout = 60000) {
 $('start').onclick = async () => {
   running = true; stopFlag = false; refresh();
   let done = 0, failed = 0;
+  const failedNames = [];
   const p1 = $('name1').value, p2 = $('name2').value;
   try {
     if (!p1.trim()) throw new Error('Give image 1 a name pattern, e.g. {base}');
@@ -136,8 +137,10 @@ $('start').onclick = async () => {
     for (const [i, job] of jobs.entries()) {
       if (stopFlag) break;
       $('status').textContent = `${i + 1}/${jobs.length}  ${job.base}`;
+      const tries = 1 + Math.max(0, parseInt($('retries').value, 10) || 0);
+      for (let attempt = 1; attempt <= tries; attempt++) {
       try {
-        log(`${job.base}: preparing...`);
+        log(`${job.base}: preparing...${attempt > 1 ? ` (retry ${attempt - 1} of ${tries - 1})` : ''}`);
         await chrome.tabs.reload(tab.id);          // fresh prompt box: no leftover ingredient
         await sleep(2500);
         await waitReady(tab.id);
@@ -164,9 +167,13 @@ $('start').onclick = async () => {
         }
         done++;
         log(`${job.base}: saved ${n1}${n2 ? ' + ' + n2 : ''}`, 'ok');
+        break;
       } catch (e) {
-        failed++;
-        log(`${job.base}: FAILED - ${e.message}`, 'err');
+        const last = attempt >= tries || stopFlag;
+        log(`${job.base}: ${last ? 'FAILED' : 'failed, will retry'} - ${e.message}`, 'err');
+        if (last) { failed++; failedNames.push(job.base); break; }
+        await sleep(5000);                         // let Flow settle before the retry
+      }
       }
       if (i < jobs.length - 1 && !stopFlag) await sleep((parseInt($('pause').value, 10) || 0) * 1000);
     }
@@ -174,6 +181,9 @@ $('start').onclick = async () => {
     log('Error: ' + e.message, 'err');
   }
   log(`Finished. ${done} saved, ${failed} failed.`, failed ? 'err' : 'ok');
+  if (failedNames.length) {
+    log('To redo only the failures, paste this into "Only names containing": ' + failedNames.join(', '), 'err');
+  }
   $('status').textContent = '';
   running = false; refresh();
 };
