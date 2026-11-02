@@ -170,6 +170,17 @@
   <div class="row"><span id="status"></span></div>
 </section>
 
+<section class="card">
+  <h2><span class="num">5</span>JOB MODE</h2>
+  <div class="hint">For unattended batches: the Bemor.Flow runner (<b>runner/runner.js</b>, on this PC only) hands out jobs from a <b>jobs.json</b> file, one at a time, and saves the results. Text-to-image and image-to-image. It stops and reports if Flow asks for a sign-in, shows a CAPTCHA or runs out of credits.</div>
+  <div class="grid3">
+    <label>Runner port<input type="number" id="jobPort" min="1" max="65535" value="8787"></label>
+  </div>
+  <div class="row"><label class="check"><input type="checkbox" id="jobAuto"> Start job mode when Chrome starts</label></div>
+  <div class="row"><button id="jobStart">Start job mode</button><button id="jobStop" disabled>Stop job mode</button></div>
+  <div class="row"><span class="chip" id="jobInfo">job mode off</span></div>
+</section>
+
 <section class="card scanner">
   <h2><span class="dot"></span>SCANNER</h2>
   <div id="log"></div>

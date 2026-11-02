@@ -110,11 +110,49 @@
     }
   }
 
+  // Re-encode a JPEG/WebP result as PNG (same pixels; the art tools read PNG only).
+  async function asPng(blob) {
+    if (/png/i.test(blob.type)) return blob;
+    const bmp = await createImageBitmap(blob);
+    const c = new OffscreenCanvas(bmp.width, bmp.height);
+    c.getContext('2d').drawImage(bmp, 0, 0);
+    return c.convertToBlob({ type: 'image/png' });
+  }
+
+  // Job mode: notice states a person must handle. Read-only: looks at the page, never clicks or types.
+  // Only the matched phrase is reported, never other page text (it can contain account details).
+  const CAPTCHA_RE = /unusual traffic|verify (that )?you(?:'|’)?re (a )?human|i(?:'|’)?m not a robot|unusual activity|automated queries/i;
+  const QUOTA_RE = /out of credits|not enough credits|insufficient credits|no (more )?credits (left|remaining)|run out of (credits|generations)|reached (your|the) (daily |monthly )?(generation |usage )?limit|(daily|generation|usage) limit (reached|exceeded)|quota (exceeded|reached)/i;
+  function detect() {
+    const box = promptBox();
+    let text = document.body ? document.body.innerText || '' : '';
+    if (box && box.innerText) text = text.split(box.innerText).join(' ');   // the user's own prompt does not count
+    text = text.slice(0, 100000);
+    if (document.querySelector('iframe[src*="recaptcha"], iframe[src*="captcha"], iframe[title*="reCAPTCHA"], .g-recaptcha, #captcha-form')) {
+      return { kind: 'captcha', detail: 'page has a reCAPTCHA / CAPTCHA frame' };
+    }
+    let m = CAPTCHA_RE.exec(text);
+    if (m) return { kind: 'captcha', detail: `page says "${m[0]}"` };
+    m = QUOTA_RE.exec(text);
+    if (m) return { kind: 'quota', detail: `page says "${m[0]}"` };
+    if (!box) {
+      const signIn = [...document.querySelectorAll('a, button, [role="button"]')].find((el) =>
+        visible(el) && /^sign in$/i.test((el.innerText || el.getAttribute('aria-label') || '').trim()));
+      if (signIn) return { kind: 'signin', detail: 'Flow shows a "Sign in" button and no prompt box' };
+    }
+    return null;
+  }
+
   const step = (t) => { try { chrome.runtime.sendMessage({ cmd: 'progress', text: t }); } catch (e) { /* runner closed */ } };
 
   async function run(job) {
     await waitFor('prompt box', promptBox, 30000);
     step('page ready');
+    if (!job.b64) {                       // text-to-image (job mode): no reference image to attach
+      await chrome.runtime.sendMessage({ cmd: 'focus-tab' });
+      await sleep(1500);
+      return promptAndGenerate(job);
+    }
     // 1. upload the reference image
     const pend = onceMessage('gw-pending-ok', 5000);
     window.postMessage({ type: 'gw-pending', name: job.name, mime: job.mime, b64: job.b64 }, '*');
@@ -180,6 +218,10 @@
     }
     step('attached as ingredient');
     if (uploadBtn()) { closePicker(); await sleep(800); }
+    return promptAndGenerate(job);
+  }
+
+  async function promptAndGenerate(job) {
     await setPrompt(job.prompt);
     step('prompt typed');
     // 4. generate and wait for new tiles
@@ -203,7 +245,8 @@
     fresh = tiles().filter((i) => !before.has(i.src) && i.naturalWidth > 200);
     const out = [];
     for (const img of fresh.slice(0, want)) {
-      const blob = await (await fetch(img.src)).blob();
+      let blob = await (await fetch(img.src)).blob();
+      if (job.png) blob = await asPng(blob);     // job mode saves <name>_<k>.png
       out.push({ type: blob.type || 'image/jpeg', b64: await toB64(blob) });
     }
     return out;
@@ -212,6 +255,10 @@
   chrome.runtime.onMessage.addListener((msg, _sender, send) => {
     if (msg.cmd === 'ping') {
       send({ ready: !!promptBox(), url: location.href });
+      return;
+    }
+    if (msg.cmd === 'detect') {
+      send({ blocked: detect(), ready: !!promptBox() });
       return;
     }
     if (msg.cmd === 'run') {

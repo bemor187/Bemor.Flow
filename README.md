@@ -8,6 +8,7 @@
   <a href="#install">Install</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="#naming-your-results">Naming</a> ·
+  <a href="#job-mode-unattended-batches">Job mode</a> ·
   <a href="#example-prompts">Examples</a> ·
   <a href="#troubleshooting">Troubleshooting</a> ·
   <a href="#support-the-project">Support</a>
@@ -102,6 +103,26 @@ The file extension (`.jpg`, `.png`, `.webp`) is added automatically. **Leave Ima
 ```
 After editing it, press ↻ on the extension. Leave it as `{}` if you don't need it.
 
+## Job mode (unattended batches)
+For longer batches, or prompts without a source image, Bemor.Flow can take its work from a job file
+instead of the panel. A small local runner (`runner/runner.js`, Node.js, no packages) serves the
+jobs on `127.0.0.1` only; the extension asks it for the next job, runs it on your open Flow project
+tab, and sends the images back. The runner saves them as `<name>_<k>.png`, keeps the best one as
+`<name>.png`, and logs every step in `results.json`.
+
+- **Text-to-image** (job has no input image) and **image-to-image** (one input image).
+- One job at a time with a random 20-60 s pause between jobs; stops after 3 failures in a row.
+- If Flow shows a sign-in page, a CAPTCHA or an out-of-credits message, or its page layout has
+  changed, job mode reports `blocked: signin | captcha | quota | ui-changed` and stops. It only
+  reads the page to notice this; it never signs in, never touches a CAPTCHA and never buys credits.
+
+**Try it:**
+1. `node runner/runner.js --jobs runner/example.jobs.json` (or `--mock` first, to see a full run offline with test images).
+2. In the panel, card **5 Job mode**, press **Start job mode**. Keep the Flow tab visible.
+
+Options, job file format, states and output files: [runner/README.md](runner/README.md).
+The manual folder batch above works exactly as before; the two modes don't run at the same time.
+
 ## Example prompts
 Start each one with `{base}_<tag>:` and describe what to keep as well as what to change. Being explicit about what stays the same is what keeps a batch consistent.
 
@@ -127,9 +148,9 @@ Start each one with `{base}_<tag>:` and describe what to keep as well as what to
 **Reporting a problem:** click **⬇ Download log** under the Scanner and attach the file to a [new issue](../../issues/new). It includes your settings and every step of the run.
 
 ## Privacy and safety
-- Everything runs locally in your browser. Bemor.Flow has no server, no tracking and no analytics.
+- Everything runs locally. Bemor.Flow has no online server, no tracking and no analytics. The optional job-mode runner runs on your own PC and accepts connections from it only.
 - Your images go only to Google Flow, in your own signed-in session, just as if you uploaded them by hand.
-- Permissions used: `tabs` (find the Flow tab), `debugger` (real clicks on the Flow tab), `sidePanel` (the panel), and access to `flow.google.com` only.
+- Permissions used: `tabs` (find the Flow tab), `debugger` (real clicks on the Flow tab), `sidePanel` (the panel), `storage` (job mode settings), access to `flow.google.com`, and `http://127.0.0.1` (your own PC) for the optional job-mode runner.
 - The extension can read and write only the folders you pick, and only while the panel is open.
 
 ## Disclaimer

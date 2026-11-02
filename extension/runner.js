@@ -30,7 +30,11 @@ function log(msg, cls) {
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 chrome.runtime.onMessage.addListener((m) => { if (m && m.cmd === 'progress') log('   ' + m.text); });
-function refresh() { $('start').disabled = !(inDir && outDir) || running; $('stop').disabled = !running; }
+let jobActive = false;   // job mode (background) and a manual run must not drive the Flow tab at the same time
+function refresh() {
+  $('start').disabled = !(inDir && outDir) || running || jobActive; $('stop').disabled = !running;
+  if ($('jobStart')) { $('jobStart').disabled = running || jobActive; $('jobStop').disabled = !jobActive; }
+}
 
 $('pickIn').onclick = async () => {
   try { inDir = await showDirectoryPicker({ mode: 'read' }); $('inInfo').textContent = inDir.name; $('inInfo').classList.add('set'); } catch (e) { /* cancelled */ }
@@ -216,3 +220,25 @@ $('copyLog').onclick = async () => {
   setTimeout(() => { $('copyLog').textContent = 'Copy log'; }, 1500);
 };
 $('clearLog').onclick = () => { if (!running) $('log').textContent = ''; };
+
+// ---- job mode: the loop runs in the background worker; this card only starts, stops and shows it ----
+function showJob(st) {
+  jobActive = !!(st && st.active);
+  $('jobInfo').textContent = jobActive ? `on, port ${st.port}: ${st.state}${st.job ? ' - ' + st.job : ''}` : `job mode ${st && st.state && st.state !== 'off' ? st.state : 'off'}`;
+  $('jobInfo').classList.toggle('set', jobActive);
+  refresh();
+}
+chrome.storage.local.get(['bfJobPort', 'bfJobAuto']).then((s) => {
+  if (s.bfJobPort) $('jobPort').value = s.bfJobPort;
+  $('jobAuto').checked = !!s.bfJobAuto;
+});
+$('jobPort').addEventListener('change', () => chrome.storage.local.set({ bfJobPort: parseInt($('jobPort').value, 10) || 8787 }));
+$('jobAuto').addEventListener('change', () => chrome.storage.local.set({ bfJobAuto: $('jobAuto').checked }));
+$('jobStart').onclick = async () => {
+  if (running) return;
+  await chrome.runtime.sendMessage({ cmd: 'job-start', port: parseInt($('jobPort').value, 10) || 8787 });
+  showJob(await chrome.runtime.sendMessage({ cmd: 'job-status' }));
+};
+$('jobStop').onclick = () => chrome.runtime.sendMessage({ cmd: 'job-stop' });
+chrome.runtime.onMessage.addListener((m) => { if (m && m.cmd === 'job-state') showJob(m); });
+chrome.runtime.sendMessage({ cmd: 'job-status' }).then(showJob, () => {});

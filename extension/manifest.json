@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Bemor.Flow",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "Applies one prompt to a folder of images in Google Flow and saves each result under a naming pattern you choose.",
   "action": {
     "default_title": "Open Bemor.Flow",
@@ -18,10 +18,12 @@
   "permissions": [
     "tabs",
     "debugger",
-    "sidePanel"
+    "sidePanel",
+    "storage"
   ],
   "host_permissions": [
-    "https://flow.google.com/*"
+    "https://flow.google.com/*",
+    "http://127.0.0.1/*"
   ],
   "content_scripts": [
     {
@@ -36,7 +38,7 @@
     },
     {
       "matches": [
-        "https://flow.google.com/project/*"
+        "https://flow.google.com/*"
       ],
       "js": [
         "flow.js"
