@@ -5,12 +5,11 @@
     {
       "name": "grass_tile",
       "prompt": "grass_tile: seamless top-down texture of short green lawn grass, even daylight, no shadows, no objects",
-      "count": 2, "inputs": [], "kind": "tile", "seamless": "all", "size": 1024
-    },
-    {
-      "name": "sneaker_white",
-      "prompt": "sneaker_white: Edit this image. Same product, same angle. Pure white studio background. No text.",
-      "count": 2, "inputs": ["images/sneaker.jpg"], "kind": "sprite", "seamless": "none"
+      "count": 2,
+      "inputs": [],
+      "kind": "tile",
+      "seamless": "all",
+      "size": 1024
     }
   ]
 }

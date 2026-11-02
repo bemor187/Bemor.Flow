@@ -21,7 +21,7 @@ at the keyboard.
 ## Usage
 ```
 node runner/runner.js --jobs jobs.json [--port 8787] [--out DIR] [--gap 20-60] [--check "CMD"]
-                      [--job-timeout 900] [--redo] [--mock] [--mock-block KIND]
+                      [--job-timeout 900] [--redo] [--ext-id ID] [--mock] [--mock-block KIND]
 ```
 Then in the Bemor.Flow side panel, card **5 Job mode**, press **Start job mode** (same port).
 
@@ -34,6 +34,7 @@ Then in the Bemor.Flow side panel, card **5 Job mode**, press **Start job mode**
 | `--check` | Command run on every image; exit code 0 = pass. Tokens: `{file}` `{seamless}` `{size}` `{name}`. If it prints JSON with `reasons` (and `score` or `seam`), those are recorded and the lowest score wins. |
 | `--job-timeout` | Seconds without any status from the extension before a job counts as failed (default 900). |
 | `--redo` | Run jobs that were already delivered in an earlier run (default: skip them). |
+| `--ext-id` | Accept requests only from this extension id (chrome://extensions shows it); default: any extension, never a web page. |
 | `--mock` | Built-in fake extension: runs the whole flow offline with small generated test images. |
 | `--mock-block KIND` | Fake extension reports `blocked: KIND` on the first job (`signin`, `captcha`, `quota`, `ui-changed`, `setup`). |
 
@@ -60,7 +61,7 @@ node runner/runner.js --jobs tiles.json --check "python -I artcheck.py check {fi
 - `inputs`: empty for **text-to-image**; one image path for **image-to-image** (only the first is attached).
 - `seamless`, `size`, `kind`: passed to the `--check` command and recorded.
 
-See `example.jobs.json` (its second job needs your own picture at `runner/images/sneaker.jpg`; remove that job to try text-to-image only).
+See `example.jobs.json` (one text-to-image job). For image-to-image, put a picture next to the jobs file and list it in `inputs`.
 
 ## States (`results.json`)
 `queued` -> `running` -> `downloaded` -> `checked` (`pass: ...` / `fail: ...`) -> `delivered`, or
@@ -85,5 +86,5 @@ See `example.jobs.json` (its second job needs your own picture at `runner/images
   - `<name>.png`: the delivered image (the best passing candidate).
   - `results.json`: states and history of this run (the previous one moves to `_old/`).
   - `manifest.json`: per job: prompt, attempts, chosen candidate, checks, date.
-  - `_old/`: any file that would be replaced is moved here first, with a timestamp. Nothing is deleted.
+  - `_old/`: any candidate, delivered image or `results.json` that would be replaced is moved here first, with a timestamp. Nothing is deleted. (`manifest.json` is the run log and is updated in place.)
 - Network: listens on 127.0.0.1 only; makes no outgoing connections (the mock client talks to the runner itself).

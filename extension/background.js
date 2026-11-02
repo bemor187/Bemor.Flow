@@ -76,7 +76,11 @@ async function jmFlowTab() {
   const tabs = await chrome.tabs.query({ url: 'https://flow.google.com/project/*' });
   const tab = tabs.find((t) => t.active) || tabs[0];
   if (tab) return { tab };
-  for (const t of await chrome.tabs.query({})) { const b = urlBlock(t.url); if (b) return { blocked: b }; }
+  // a sign-in / check page counts only if it belongs to Flow (on Flow, or its continue= link points back there)
+  for (const t of await chrome.tabs.query({})) {
+    if (!/flow\.google\.com|labs\.google/.test(t.url || '')) continue;
+    const b = urlBlock(t.url); if (b) return { blocked: b };
+  }
   const other = (await chrome.tabs.query({ url: 'https://flow.google.com/*' }))[0];
   if (other) {
     const b = await pageBlock(other.id);

@@ -33,6 +33,7 @@ function parseArgs(argv) {
     } else if (a === '--check') o.check = v();
     else if (a === '--job-timeout') o.jobTimeout = parseFloat(v());
     else if (a === '--redo') o.redo = true;
+    else if (a === '--ext-id') o.extId = v();
     else if (a === '--mock') o.mock = true;
     else if (a === '--mock-block') { o.mockBlock = v(); o.mock = true; }
     else if (a === '-h' || a === '--help') { console.log(fs.readFileSync(path.join(__dirname, 'README.md'), 'utf8')); process.exit(0); }
@@ -289,7 +290,8 @@ function main() {
     const host = String(req.headers.host || '');
     const origin = req.headers.origin;
     if (!new RegExp(`^(127\\.0\\.0\\.1|localhost):${opt.port}$`).test(host)) return send(res, 403, { error: 'bad host' });
-    if (origin && !/^chrome-extension:\/\//.test(origin)) return send(res, 403, { error: 'origin not allowed' });
+    // --ext-id: only that extension; else any extension (never a web page)
+    if (origin && !(opt.extId ? origin === 'chrome-extension://' + opt.extId : /^chrome-extension:\/\//.test(origin))) return send(res, 403, { error: 'origin not allowed' });
     const url = new URL(req.url, `http://${HOST}:${opt.port}`);
     if (req.method === 'GET' && url.pathname === '/hello') return send(res, 200, { app: 'bemor-flow-runner', version: VERSION, set, run_state: finished || 'running' });
     if (req.method === 'GET' && url.pathname === '/next') return send(res, 200, onNext());
